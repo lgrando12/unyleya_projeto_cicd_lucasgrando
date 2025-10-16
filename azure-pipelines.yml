@@ -1,29 +1,36 @@
-# Docker
-# Build a Docker image
-# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
-
+# Esta pipeline será acionada por pushes na branch 'main'
 trigger:
-- master
+- main
 
-resources:
-- repo: self
+# O agente de build será uma máquina Linux virtual fornecida pela Microsoft
+pool:
+  vmImage: 'ubuntu-latest'
 
+# Variáveis para tornar a pipeline mais fácil de ler e manter
 variables:
+  # O nome da Service Connection que você acabou de criar
+  dockerRegistryServiceConnection: 'AzureSubscriptionConnection'
+  
+  # O nome que daremos para a imagem Docker
+  imageRepository: 'azure-vote-front'
+  
+  # O endereço do seu ACR que o Terraform criou
+  containerRegistry: 'acrunyleyalucasgrando.azurecr.io' 
+  
+  # O caminho para o Dockerfile dentro do seu projeto
+  dockerfilePath: '$(Build.SourcesDirectory)/azure-vote/Dockerfile'
+  
+  # Uma 'tag' única para cada imagem, baseada no ID do build
   tag: '$(Build.BuildId)'
 
-stages:
-- stage: Build
-  displayName: Build image
-  jobs:
-  - job: Build
-    displayName: Build
-    pool:
-      vmImage: ubuntu-latest
-    steps:
-    - task: Docker@2
-      displayName: Build an image
-      inputs:
-        command: build
-        dockerfile: '$(Build.SourcesDirectory)/azure-vote/Dockerfile'
-        tags: |
-          $(tag)
+# A lista de tarefas que a pipeline irá executar
+steps:
+- task: Docker@2
+  displayName: 'Build and Push Docker Image to ACR'
+  inputs:
+    command: buildAndPush
+    repository: $(imageRepository)
+    dockerfile: $(dockerfilePath)
+    containerRegistry: $(dockerRegistryServiceConnection)
+    tags: |
+      $(tag)
