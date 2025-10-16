@@ -1,6 +1,6 @@
 # Esta pipeline será acionada por pushes na branch 'main'
 trigger:
-- main
+- master
 
 # O agente de build será uma máquina Linux virtual fornecida pela Microsoft
 pool:
