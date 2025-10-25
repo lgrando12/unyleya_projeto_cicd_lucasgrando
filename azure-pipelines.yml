@@ -26,10 +26,8 @@ stages:
         command: buildAndPush
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
-        # --- LINHAS CORRIGIDAS ABAIXO ---
-        azureSubscription: $(dockerRegistryServiceConnection) # <--- CORREÇÃO: Usamos este campo para a conexão 'azurerm'
-        containerRegistry: $(containerRegistry)         # <--- CORREÇÃO: Aqui vai a URL do seu ACR
-        # --- FIM DA CORREÇÃO ---
+        azureSubscription: $(dockerRegistryServiceConnection) # <--- O parâmetro da sua conexão
+        azureContainerRegistry: $(containerRegistry)         # <--- O parâmetro correto para a URL do ACR
         tags: |
           $(tag)
     
@@ -47,7 +45,7 @@ stages:
   jobs:
   - job: ManualApproval
     displayName: 'Aprovação Manual'
-    pool: server # Este job é especial, roda no servidor do DevOps
+    pool: server 
     timeoutInMinutes: 4320 # 3 dias
     steps:
     - task: ManualValidation@0
@@ -58,13 +56,13 @@ stages:
 
 - stage: Deploy
   displayName: 'Deploy to AKS Stage'
-  dependsOn: Approval # Só roda depois do Approval
+  dependsOn: Approval 
   condition: succeeded()
   jobs:
   - job: DeployToAKS
     displayName: 'Deploy Helm Chart no AKS'
     pool:
-      vmImage: 'ubuntu-latest' # Roda em um agente normal (que é gratuito)
+      vmImage: 'ubuntu-latest'
     steps:
       # Tarefa 1: Baixar o artefato (Helm Chart)
       - task: DownloadPipelineArtifact@2
