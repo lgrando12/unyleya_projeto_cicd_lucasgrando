@@ -4,14 +4,14 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
-# Nossas variáveis de antes
+# Nossas variáveis
 variables:
   dockerRegistryServiceConnection: 'AzureSubscriptionConnection'
   imageRepository: 'azure-vote-front'
   containerRegistry: 'acrunyleyalucasgrando.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/azure-vote/Dockerfile'
   tag: '$(Build.BuildId)'
-  helmChartPath: '$(Build.SourcesDirectory)/azure-vote' # Caminho para o Helm Chart
+  helmChartPath: '$(Build.SourcesDirectory)/azure-vote'
 
 stages:
 - stage: Build
@@ -30,46 +30,62 @@ stages:
         tags: |
           $(tag)
     
-    # Nova tarefa: Publicar o Helm Chart como um artefato
+    # Publicar o Helm Chart como um artefato
     - task: PublishPipelineArtifact@1
       displayName: 'Publicar Helm Chart'
       inputs:
         targetPath: $(helmChartPath)
-        artifact: 'helm-chart' # Damos um nome ao artefato
+        artifact: 'helm-chart'
+
+# === MUDANÇA COMEÇA AQUI ===
+
+- stage: Approval
+  displayName: 'Aguardando Aprovação'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: ManualApproval
+    displayName: 'Aprovação Manual'
+    pool: server # Este job é especial, roda no servidor do DevOps
+    timeoutInMinutes: 4320 # 3 dias
+    steps:
+    - task: ManualValidation@0
+      inputs:
+        notifyUsers: 'lucas01grando@gmail.com'
+        instructions: 'Por favor, aprove o deploy da aplicação azure-vote para o AKS.'
+        onTimeout: 'reject'
 
 - stage: Deploy
   displayName: 'Deploy to AKS Stage'
-  dependsOn: Build # Só roda se o Build passar
+  dependsOn: Approval # Só roda depois do Approval
   condition: succeeded()
   jobs:
-  - deployment: DeployToAKS
+  - job: DeployToAKS
     displayName: 'Deploy Helm Chart no AKS'
-    environment: 'aks-producao.default' # NomeDoAmbiente.Namespace
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          # Tarefa 1: Baixar o artefato (Helm Chart) que o Build publicou
-          - task: DownloadPipelineArtifact@2
-            displayName: 'Baixar Helm Chart'
-            inputs:
-              artifact: 'helm-chart'
-              path: '$(Pipeline.Workspace)/helm-chart'
-          
-          # Tarefa 2: Instalar o Helm
-          - task: HelmInstaller@1
-            displayName: 'Instalar Helm'
+    pool:
+      vmImage: 'ubuntu-latest' # Roda em um agente normal (que é gratuito)
+    steps:
+      # Tarefa 1: Baixar o artefato (Helm Chart)
+      - task: DownloadPipelineArtifact@2
+        displayName: 'Baixar Helm Chart'
+        inputs:
+          artifact: 'helm-chart'
+          path: '$(Pipeline.Workspace)/helm-chart'
+      
+      # Tarefa 2: Instalar o Helm
+      - task: HelmInstaller@1
+        displayName: 'Instalar Helm'
 
-          # Tarefa 3: Fazer o Deploy com Helm
-          - task: HelmDeploy@0
-            displayName: 'Deploy com Helm'
-            inputs:
-              connectionType: 'Azure Resource Manager'
-              azureSubscription: $(dockerRegistryServiceConnection)
-              azureResourceGroup: 'rg-unyleya-lucas-grando'
-              kubernetesCluster: 'aks-unyleya-lucas-grando'
-              command: 'upgrade'
-              chartType: 'FilePath'
-              chartPath: '$(Pipeline.Workspace)/helm-chart'
-              releaseName: 'azure-vote-app'
-              arguments: '--set image.repository=$(containerRegistry)/$(imageRepository) --set image.tag=$(tag) --namespace default'
+      # Tarefa 3: Fazer o Deploy com Helm
+      - task: HelmDeploy@0
+        displayName: 'Deploy com Helm'
+        inputs:
+          connectionType: 'Azure Resource Manager'
+          azureSubscription: $(dockerRegistryServiceConnection)
+          azureResourceGroup: 'rg-unyleya-lucas-grando'
+          kubernetesCluster: 'aks-unyleya-lucas-grando'
+          command: 'upgrade'
+          chartType: 'FilePath'
+          chartPath: '$(Pipeline.Workspace)/helm-chart'
+          releaseName: 'azure-vote-app'
+          arguments: '--set image.repository=$(containerRegistry)/$(imageRepository) --set image.tag=$(tag) --namespace default'
