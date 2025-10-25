@@ -1,36 +1,75 @@
-# Esta pipeline será acionada por pushes na branch 'main'
 trigger:
-- master
+- master # Gatilho para a branch master
 
-# O agente de build será uma máquina Linux virtual fornecida pela Microsoft
 pool:
   vmImage: 'ubuntu-latest'
 
-# Variáveis para tornar a pipeline mais fácil de ler e manter
+# Nossas variáveis de antes
 variables:
-  # O nome da Service Connection que você acabou de criar
   dockerRegistryServiceConnection: 'AzureSubscriptionConnection'
-  
-  # O nome que daremos para a imagem Docker
   imageRepository: 'azure-vote-front'
-  
-  # O endereço do seu ACR que o Terraform criou
-  containerRegistry: 'acrunyleyalucasgrando.azurecr.io' 
-  
-  # O caminho para o Dockerfile dentro do seu projeto
+  containerRegistry: 'acrunyleyalucasgrando.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/azure-vote/Dockerfile'
-  
-  # Uma 'tag' única para cada imagem, baseada no ID do build
   tag: '$(Build.BuildId)'
+  helmChartPath: '$(Build.SourcesDirectory)/azure-vote' # Caminho para o Helm Chart
 
-# A lista de tarefas que a pipeline irá executar
-steps:
-- task: Docker@2
-  displayName: 'Build and Push Docker Image to ACR'
-  inputs:
-    command: buildAndPush
-    repository: $(imageRepository)
-    dockerfile: $(dockerfilePath)
-    containerRegistry: $(dockerRegistryServiceConnection)
-    tags: |
-      $(tag)
+stages:
+- stage: Build
+  displayName: 'Build and Push Stage'
+  jobs:
+  - job: Build
+    displayName: 'Build e Push da Imagem Docker'
+    steps:
+    - task: Docker@2
+      displayName: 'Build and Push Docker Image to ACR'
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+    
+    # Nova tarefa: Publicar o Helm Chart como um artefato
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publicar Helm Chart'
+      inputs:
+        targetPath: $(helmChartPath)
+        artifact: 'helm-chart' # Damos um nome ao artefato
+
+- stage: Deploy
+  displayName: 'Deploy to AKS Stage'
+  dependsOn: Build # Só roda se o Build passar
+  condition: succeeded()
+  jobs:
+  - deployment: DeployToAKS
+    displayName: 'Deploy Helm Chart no AKS'
+    environment: 'aks-producao.default' # NomeDoAmbiente.Namespace
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          # Tarefa 1: Baixar o artefato (Helm Chart) que o Build publicou
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Baixar Helm Chart'
+            inputs:
+              artifact: 'helm-chart'
+              path: '$(Pipeline.Workspace)/helm-chart'
+          
+          # Tarefa 2: Instalar o Helm
+          - task: HelmInstaller@1
+            displayName: 'Instalar Helm'
+
+          # Tarefa 3: Fazer o Deploy com Helm
+          - task: HelmDeploy@0
+            displayName: 'Deploy com Helm'
+            inputs:
+              connectionType: 'Azure Resource Manager'
+              azureSubscription: $(dockerRegistryServiceConnection)
+              azureResourceGroup: 'rg-unyleya-lucas-grando'
+              kubernetesCluster: 'aks-unyleya-lucas-grando'
+              command: 'upgrade'
+              chartType: 'FilePath'
+              chartPath: '$(Pipeline.Workspace)/helm-chart'
+              releaseName: 'azure-vote-app'
+              arguments: '--set image.repository=$(containerRegistry)/$(imageRepository) --set image.tag=$(tag) --namespace default'
