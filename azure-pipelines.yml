@@ -26,7 +26,10 @@ stages:
         command: buildAndPush
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection)
+        # --- LINHAS CORRIGIDAS ABAIXO ---
+        azureSubscription: $(dockerRegistryServiceConnection) # <--- CORREÇÃO: Usamos este campo para a conexão 'azurerm'
+        containerRegistry: $(containerRegistry)         # <--- CORREÇÃO: Aqui vai a URL do seu ACR
+        # --- FIM DA CORREÇÃO ---
         tags: |
           $(tag)
     
@@ -36,8 +39,6 @@ stages:
       inputs:
         targetPath: $(helmChartPath)
         artifact: 'helm-chart'
-
-# === MUDANÇA COMEÇA AQUI ===
 
 - stage: Approval
   displayName: 'Aguardando Aprovação'
