@@ -6,7 +6,9 @@ pool:
 
 # Nossas variáveis
 variables:
-  dockerRegistryServiceConnection: 'AzureSubscriptionConnection'
+  # === MUDANÇA AQUI ===
+  dockerRegistryServiceConnection: 'ConexaoDockerACR' # Nome da nossa NOVA conexão
+  # ====================
   imageRepository: 'azure-vote-front'
   containerRegistry: 'acrunyleyalucasgrando.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/azure-vote/Dockerfile'
@@ -20,16 +22,17 @@ stages:
   - job: Build
     displayName: 'Build e Push da Imagem Docker'
     steps:
+    # === MUDANÇA AQUI ===
     - task: Docker@2
       displayName: 'Build and Push Docker Image to ACR'
       inputs:
         command: buildAndPush
-        repository: '$(containerRegistry)/$(imageRepository)' # <--- A CORREÇÃO ESTÁ AQUI
+        repository: '$(containerRegistry)/$(imageRepository)'
         dockerfile: $(dockerfilePath)
-        azureSubscription: $(dockerRegistryServiceConnection)
-        azureContainerRegistry: $(containerRegistry)
+        containerRegistry: $(dockerRegistryServiceConnection) # Aponta para a ConexaoDockerACR
         tags: |
           $(tag)
+    # ====================
     
     # Publicar o Helm Chart como um artefato
     - task: PublishPipelineArtifact@1
@@ -80,7 +83,7 @@ stages:
         displayName: 'Deploy com Helm'
         inputs:
           connectionType: 'Azure Resource Manager'
-          azureSubscription: $(dockerRegistryServiceConnection)
+          azureSubscription: 'AzureSubscriptionConnection' # A conexão antiga AINDA é usada aqui, pois ela tem permissão para o AKS
           azureResourceGroup: 'rg-unyleya-lucas-grando'
           kubernetesCluster: 'aks-unyleya-lucas-grando'
           command: 'upgrade'
