@@ -24,10 +24,10 @@ stages:
       displayName: 'Build and Push Docker Image to ACR'
       inputs:
         command: buildAndPush
-        repository: $(imageRepository)
+        repository: '$(containerRegistry)/$(imageRepository)' # <--- A CORREÇÃO ESTÁ AQUI
         dockerfile: $(dockerfilePath)
-        azureSubscription: $(dockerRegistryServiceConnection) # <--- O parâmetro da sua conexão
-        azureContainerRegistry: $(containerRegistry)         # <--- O parâmetro correto para a URL do ACR
+        azureSubscription: $(dockerRegistryServiceConnection)
+        azureContainerRegistry: $(containerRegistry)
         tags: |
           $(tag)
     
