@@ -88,6 +88,6 @@ stages:
           kubernetesCluster: 'aks-unyleya-lucas-grando'
           command: 'upgrade'
           chartType: 'FilePath'
-          chartPath: '$(Pipeline.Workspace)/helm-chart/azure-vote'
+          chartPath: '$(Pipeline.Workspace)/helm-chart'
           releaseName: 'azure-vote-app'
           arguments: '--set image.repository=$(containerRegistry)/$(imageRepository) --set image.tag=$(tag) --namespace default'
