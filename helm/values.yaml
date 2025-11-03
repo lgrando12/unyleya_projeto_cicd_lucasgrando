@@ -1,0 +1,13 @@
+frontend:
+  image:
+    repository: acrunyleyalucasgrando.azurecr.io/azure-vote-front 
+    tag: latest
+  ports:
+    containerPort: 80
+
+redis:
+  image:
+    repository: mcr.microsoft.com/oss/bitnami/redis
+    tag: 6.0.8
+  ports:
+    containerPort: 6379

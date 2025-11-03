@@ -4,16 +4,14 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
-# Nossas variáveis
+
 variables:
-  # === MUDANÇA AQUI ===
-  dockerRegistryServiceConnection: 'ConexaoDockerACR' # Nome da nossa NOVA conexão
-  # ====================
+  dockerRegistryServiceConnection: 'ConexaoDockerACR'
   imageRepository: 'azure-vote-front'
   containerRegistry: 'acrunyleyalucasgrando.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/azure-vote/Dockerfile'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile' 
   tag: '$(Build.BuildId)'
-  helmChartPath: '$(Build.SourcesDirectory)/azure-vote'
+  helmChartPath: '$(Build.SourcesDirectory)/helm' 
 
 stages:
 - stage: Build
@@ -22,23 +20,21 @@ stages:
   - job: Build
     displayName: 'Build e Push da Imagem Docker'
     steps:
-    # === MUDANÇA AQUI ===
     - task: Docker@2
       displayName: 'Build and Push Docker Image to ACR'
       inputs:
         command: buildAndPush
         repository: '$(containerRegistry)/$(imageRepository)'
         dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection) # Aponta para a ConexaoDockerACR
+        containerRegistry: $(dockerRegistryServiceConnection) 
         tags: |
           $(tag)
-    # ====================
     
     # Publicar o Helm Chart como um artefato
     - task: PublishPipelineArtifact@1
       displayName: 'Publicar Helm Chart'
       inputs:
-        targetPath: $(helmChartPath)
+        targetPath: $(helmChartPath) # Publica a pasta /helm
         artifact: 'helm-chart'
 
 - stage: Approval
@@ -73,18 +69,6 @@ stages:
         inputs:
           artifact: 'helm-chart'
           path: '$(Pipeline.Workspace)/helm-chart'
-
-          # =======================================================
-      # === TAREFA DE DEBUG (NOVA) ===
-      # =======================================================
-      - task: CmdLine@2
-        displayName: 'Listar Arquivos (Debug)'
-        inputs:
-          script: |
-            echo "--- Listando arquivos no Workspace ---"
-            ls -R $(Pipeline.Workspace)
-            echo "--------------------------------------"
-      # =======================================================
       
       # Tarefa 2: Instalar o Helm
       - task: HelmInstaller@1
@@ -95,11 +79,11 @@ stages:
         displayName: 'Deploy com Helm'
         inputs:
           connectionType: 'Azure Resource Manager'
-          azureSubscription: 'AzureSubscriptionConnection' # A conexão antiga AINDA é usada aqui, pois ela tem permissão para o AKS
+          azureSubscription: 'AzureSubscriptionConnection' 
           azureResourceGroup: 'rg-unyleya-lucas-grando'
           kubernetesCluster: 'aks-unyleya-lucas-grando'
           command: 'upgrade'
           chartType: 'FilePath'
           chartPath: '$(Pipeline.Workspace)/helm-chart'
           releaseName: 'azure-vote-app'
-          arguments: '--set image.repository=$(containerRegistry)/$(imageRepository) --set image.tag=$(tag) --namespace default'
+          arguments: '--set frontend.image.tag=$(tag) --namespace default'
