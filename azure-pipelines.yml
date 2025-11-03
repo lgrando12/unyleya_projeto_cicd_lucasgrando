@@ -73,6 +73,18 @@ stages:
         inputs:
           artifact: 'helm-chart'
           path: '$(Pipeline.Workspace)/helm-chart'
+
+          # =======================================================
+      # === TAREFA DE DEBUG (NOVA) ===
+      # =======================================================
+      - task: CmdLine@2
+        displayName: 'Listar Arquivos (Debug)'
+        inputs:
+          script: |
+            echo "--- Listando arquivos no Workspace ---"
+            ls -R $(Pipeline.Workspace)
+            echo "--------------------------------------"
+      # =======================================================
       
       # Tarefa 2: Instalar o Helm
       - task: HelmInstaller@1
