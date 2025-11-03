@@ -17,6 +17,9 @@ spec:
         image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
         ports:
         - containerPort: {{ .Values.redis.ports.containerPort }}
+        env: # <-- BLOCO ADICIONADO
+        - name: ALLOW_EMPTY_PASSWORD
+          value: "yes"
 ---
 apiVersion: v1
 kind: Service
