@@ -7,11 +7,17 @@ spec:
   selector:
     matchLabels:
       app: azure-vote-front
+  
+  # O 'template' (planta do pod) começa aqui
   template:
     metadata:
       labels:
-        app: azure-vote-front
-    spec:
+        app: azure-vote-front # <-- CORREÇÃO 1: Adicionar a etiqueta aqui
+    spec: # <-- CORREÇÃO 2: Indentação corrigida (ao mesmo nível que metadata)
+      
+      imagePullSecrets: # <-- CORREÇÃO 3: No local CORRETO (dentro de template.spec)
+      - name: acr-secret
+      
       containers:
       - name: azure-vote-front
         image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
@@ -31,4 +37,4 @@ spec:
   - port: 80
     targetPort: {{ .Values.frontend.ports.containerPort }}
   selector:
-    app: azure-vote-front
+    app: azure-vote-front # Isto está correto e agora vai encontrar os pods
