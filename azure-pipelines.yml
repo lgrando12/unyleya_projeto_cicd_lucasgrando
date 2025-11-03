@@ -4,14 +4,14 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
-
+# Nossas variáveis
 variables:
   dockerRegistryServiceConnection: 'ConexaoDockerACR'
   imageRepository: 'azure-vote-front'
   containerRegistry: 'acrunyleyalucasgrando.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile' 
+  dockerfilePath: '$(Build.SourcesDirectory)/azure-vote/Dockerfile' # <-- A CORREÇÃO ESTÁ AQUI
   tag: '$(Build.BuildId)'
-  helmChartPath: '$(Build.SourcesDirectory)/helm' 
+  helmChartPath: '$(Build.SourcesDirectory)/helm' # A pasta 'helm' que criamos
 
 stages:
 - stage: Build
@@ -79,11 +79,11 @@ stages:
         displayName: 'Deploy com Helm'
         inputs:
           connectionType: 'Azure Resource Manager'
-          azureSubscription: 'AzureSubscriptionConnection' 
+          azureSubscription: 'AzureSubscriptionConnection' # A conexão de admin
           azureResourceGroup: 'rg-unyleya-lucas-grando'
           kubernetesCluster: 'aks-unyleya-lucas-grando'
           command: 'upgrade'
           chartType: 'FilePath'
-          chartPath: '$(Pipeline.Workspace)/helm-chart'
+          chartPath: '$(Pipeline.Workspace)/helm-chart' # O caminho correto para o Chart.yaml
           releaseName: 'azure-vote-app'
           arguments: '--set frontend.image.tag=$(tag) --namespace default'
