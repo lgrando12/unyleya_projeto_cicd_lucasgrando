@@ -2,39 +2,53 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: azure-vote-front
+  labels:
+    app: azure-vote-front
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: azure-vote-front
-  
-  # O 'template' (planta do pod) começa aqui
   template:
     metadata:
       labels:
-        app: azure-vote-front # <-- CORREÇÃO 1: Adicionar a etiqueta aqui
-    spec: # <-- CORREÇÃO 2: Indentação corrigida (ao mesmo nível que metadata)
-      
-      imagePullSecrets: # <-- CORREÇÃO 3: No local CORRETO (dentro de template.spec)
-      - name: acr-secret
-      
+        app: azure-vote-front
+    spec:
+      imagePullSecrets:
+        - name: acr-secret  # segredo com credenciais do ACR
       containers:
-      - name: azure-vote-front
-        image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
-        ports:
-        - containerPort: {{ .Values.frontend.ports.containerPort }}
-        env:
-        - name: REDIS
-          value: "azure-vote-back"
+        - name: azure-vote-front
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.frontend.ports.containerPort }}
+          env:
+            - name: REDIS
+              value: "azure-vote-back"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.frontend.ports.containerPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.frontend.ports.containerPort }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: azure-vote-front
+  labels:
+    app: azure-vote-front
 spec:
   type: LoadBalancer
   ports:
-  - port: 80
-    targetPort: {{ .Values.frontend.ports.containerPort }}
+    - port: 80
+      targetPort: {{ .Values.frontend.ports.containerPort }}
   selector:
-    app: azure-vote-front # Isto está correto e agora vai encontrar os pods
+    app: azure-vote-front
