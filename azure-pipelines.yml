@@ -20,22 +20,26 @@ stages:
   - job: Build
     displayName: 'Build e Push da Imagem Docker'
     steps:
+    - checkout: self
+
     - task: Docker@2
       displayName: 'Build and Push Docker Image to ACR'
       inputs:
         command: buildAndPush
-        repository: '$(containerRegistry)/$(imageRepository)'
+        containerRegistry: $(dockerRegistryServiceConnection)
+        repository: $(imageRepository) # <-- apenas o nome do repositório!
         dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection) 
+        buildContext: $(Build.SourcesDirectory)
         tags: |
-          $(tag)
+          $(Build.BuildId)
     
-    # Publicar o Helm Chart como um artefato
+    # Publicar o Helm Chart como artefato
     - task: PublishPipelineArtifact@1
       displayName: 'Publicar Helm Chart'
       inputs:
-        targetPath: $(helmChartPath) # Publica a pasta /helm
+        targetPath: $(helmChartPath)
         artifact: 'helm-chart'
+
 
 - stage: Approval
   displayName: 'Aguardando Aprovação'
@@ -86,4 +90,4 @@ stages:
           chartType: 'FilePath'
           chartPath: '$(Pipeline.Workspace)/helm-chart' # O caminho correto para o Chart.yaml
           releaseName: 'azure-vote-app'
-          arguments: '--set frontend.image.tag=$(tag) --namespace default'
+          arguments: '--install --wait --set frontend.image.tag=$(Build.BuildId)'

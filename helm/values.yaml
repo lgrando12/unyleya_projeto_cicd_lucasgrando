@@ -1,7 +1,7 @@
 frontend:
   image:
     repository: acrunyleyalucasgrando.azurecr.io/azure-vote-front
-    tag: "26"              # <<< substitua pelo número do build/tag que você quer usar
+    tag: latest            # <<< substitua pelo número do build/tag que você quer usar
   ports:
     containerPort: 80
 
