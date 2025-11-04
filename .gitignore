@@ -109,3 +109,17 @@ ENV/
 
 # Pasta de plugins e módulos do Terraform
 .terraform/
+
+
+# Arquivos de estado do Terraform
+*.tfstate
+*.tfstate.backup
+
+# Arquivos de lock do Terraform
+.terraform.lock.hcl
+
+# Pasta de plugins e módulos do Terraform
+.terraform/
+
+# Ficheiro de segredos manuais
+secret.yaml
