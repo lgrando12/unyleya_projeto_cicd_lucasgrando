@@ -26,12 +26,12 @@ stages:
       displayName: 'Build and Push Docker Image to ACR'
       inputs:
         command: buildAndPush
-        containerRegistry: $(dockerRegistryServiceConnection)
-        repository: $(imageRepository) # <-- apenas o nome do repositório!
+        repository: '$(containerRegistry)/$(imageRepository)'
         dockerfile: $(dockerfilePath)
-        buildContext: $(Build.SourcesDirectory)
+        buildContext: '$(Build.SourcesDirectory)/azure-vote' # <--- A CORREÇÃO
+        containerRegistry: $(dockerRegistryServiceConnection) 
         tags: |
-          $(Build.BuildId)
+          $(tag)
     
     # Publicar o Helm Chart como artefato
     - task: PublishPipelineArtifact@1
