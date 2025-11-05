@@ -9,7 +9,7 @@ variables:
   dockerRegistryServiceConnection: 'ConexaoDockerACR'
   imageRepository: 'azure-vote-front'
   containerRegistry: 'acrunyleyalucasgrando.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/azure-vote/Dockerfile' # <-- A CORREÇÃO ESTÁ AQUI
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile' # <-- A CORREÇÃO ESTÁ AQUI
   tag: '$(Build.BuildId)'
   helmChartPath: '$(Build.SourcesDirectory)/helm' # A pasta 'helm' que criamos
 
