@@ -13,6 +13,9 @@ spec:
     metadata:
       labels:
         app: azure-vote-front
+      annotations: # <-- ADICIONE ESTE BLOCO INTEIRO
+        newrelic.com/inject-python-agent: "true"
+        newrelic.com/app-name: "azure-vote-front"
     spec:
       imagePullSecrets:
         - name: acr-secret  # segredo com credenciais do ACR
